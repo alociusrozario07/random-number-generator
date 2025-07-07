@@ -24,13 +24,17 @@
             text-shadow: 0 2px 4px rgba(0,0,0,0.3);
         }
         
+        .number-display-container {
+            position: relative;
+            margin: 20px 0;
+        }
+        
         .number-display {
             background: rgba(255, 255, 255, 0.15);
             backdrop-filter: blur(10px);
             border: 2px solid rgba(255, 255, 255, 0.2);
             border-radius: 12px;
             padding: 20px;
-            margin: 20px 0;
             font-size: 48px;
             font-weight: bold;
             letter-spacing: 8px;
@@ -41,6 +45,35 @@
             justify-content: center;
             text-shadow: 0 2px 8px rgba(0,0,0,0.3);
             transition: all 0.3s ease;
+        }
+        
+        .copy-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+        
+        .copy-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(1.05);
+        }
+        
+        .copy-btn:active {
+            transform: scale(0.95);
+        }
+        
+        .copy-btn.copied {
+            background: rgba(76, 175, 80, 0.8);
+            border-color: rgba(76, 175, 80, 1);
         }
         
         .number-display.generating {
@@ -126,8 +159,13 @@
     <div class="generator-container">
         <div class="title">6-Digit Random Number Generator</div>
         
-        <div class="number-display" id="numberDisplay">
-            Click Generate!
+        <div class="number-display-container">
+            <div class="number-display" id="numberDisplay">
+                Click Generate!
+            </div>
+            <button class="copy-btn" id="copyBtn" onclick="copyToClipboard()" style="display: none;">
+                📋 Copy
+            </button>
         </div>
         
         <button class="generate-btn" id="generateBtn" onclick="generateNumber()">
@@ -154,10 +192,12 @@
             isGenerating = true;
             const btn = document.getElementById('generateBtn');
             const display = document.getElementById('numberDisplay');
+            const copyBtn = document.getElementById('copyBtn');
             
             btn.disabled = true;
             btn.textContent = 'Generating...';
             display.classList.add('generating');
+            copyBtn.style.display = 'none';
             
             // Animate through random numbers for effect
             let iterations = 0;
@@ -176,6 +216,9 @@
                     display.textContent = finalNumber.toString();
                     display.classList.remove('generating');
                     
+                    // Show copy button
+                    copyBtn.style.display = 'block';
+                    
                     // Add to history
                     addToHistory(finalNumber);
                     
@@ -185,6 +228,61 @@
                     isGenerating = false;
                 }
             }, 50);
+        }
+        
+        function copyToClipboard() {
+            const display = document.getElementById('numberDisplay');
+            const copyBtn = document.getElementById('copyBtn');
+            const numberText = display.textContent;
+            
+            if (numberText && numberText !== 'Click Generate!') {
+                // Try modern clipboard API first
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(numberText).then(() => {
+                        showCopyFeedback(copyBtn);
+                    }).catch(() => {
+                        // Fallback to older method
+                        fallbackCopyToClipboard(numberText, copyBtn);
+                    });
+                } else {
+                    // Fallback for older browsers
+                    fallbackCopyToClipboard(numberText, copyBtn);
+                }
+            }
+        }
+        
+        function fallbackCopyToClipboard(text, btn) {
+            const textArea = document.createElement('textarea');
+            textArea.value = text;
+            textArea.style.position = 'fixed';
+            textArea.style.left = '-999999px';
+            textArea.style.top = '-999999px';
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            
+            try {
+                document.execCommand('copy');
+                showCopyFeedback(btn);
+            } catch (err) {
+                console.error('Failed to copy: ', err);
+                btn.textContent = '❌ Failed';
+                setTimeout(() => {
+                    btn.textContent = '📋 Copy';
+                    btn.classList.remove('copied');
+                }, 2000);
+            }
+            
+            document.body.removeChild(textArea);
+        }
+        
+        function showCopyFeedback(btn) {
+            btn.textContent = '✅ Copied!';
+            btn.classList.add('copied');
+            setTimeout(() => {
+                btn.textContent = '📋 Copy';
+                btn.classList.remove('copied');
+            }, 2000);
         }
         
         function addToHistory(number) {
